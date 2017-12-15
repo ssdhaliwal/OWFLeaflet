@@ -13,7 +13,7 @@ Project to use Leaflet as map component under OWF.
 ### Follow-on items
 5. (continually in work once 1-4 are done)
 ---
-## Dependencies
+#### Dependencies
 A. JQuery
 B. Bootstrap
 C. Handlebars
@@ -21,4 +21,4 @@ D. Ozone Widget Framework (OWF)
 E. Javascript
 F. Java/C##
 ---
-## License: MIT
+#### License: MIT
