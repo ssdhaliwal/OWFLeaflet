@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<title>Leaflet Widget</title>
+
+<head>
+    <meta charset="ISO-8859-1">
+    <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate" />
+    <!-- meta http-equiv="cache-control" content="max-age=360" /-->
+    <meta http-equiv="pragma" content="no-cache" />
+    <meta http-equiv="expires" content="0" />
+    <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- dynamic loading of scripts for cache busting -->
+    <script type="text/javascript">
+        var loadCSS = function (refCSS) {
+            var eCSS = document.createElement("link");
+            eCSS.rel = "stylesheet";
+            eCSS.href = refCSS;
+            document.getElementsByTagName('head')[0].appendChild(eCSS);
+        }
+        var loadJS = function (refJS, data) {
+            var eJS = document.createElement("script");
+            eJS.type = 'text/javascript';
+            eJS.src = refJS;
+
+            // loop throught the data array and update the script tag
+            // cannot update the object directly; have to use setAttribute
+            if (data) {
+                data.forEach(function(item) {
+                    for (var prop in item) {
+                        eJS.setAttribute(prop, item[prop]);
+                    };
+                });
+            }
+            document.getElementsByTagName('head')[0].appendChild(eJS);
+        }
+    </script>
+</head>
+
+<body>
+    <script type="text/javascript">
+        var ver = "ver=" + (new Date()).getTime();
+
+        // add css for core items
+        loadCSS("vendor/css/bootstrap.min.css?" + ver);
+        loadCSS("vendor/css/leaflet.css?" + ver);
+        loadCSS("vendor/css/dragAndDrop.css?" + ver);
+
+        // add css for widget specific
+        loadCSS("widget/css/base_style.css?" + ver);
+        loadCSS("widget/css/widget_style.css?" + ver);
+
+        // add vendor javascripts
+        loadJS("vendor/js/owf-widget.min.js?" + ver);
+        loadJS("vendor/js/require-2.3.5.min.js?" + ver, [{"data-main": "./app"}]);
+
+        // add core support/utilities and config scripts
+    </script>
+    <div class="row-title row margin-zero">
+        <div class="col-xs-8 margin-zero btn-group left">
+            <button id="btnMaps" type="button" class="btn btn-default btn-xs btn-toolbar btn-tbimg-maps disabled"></button>
+            <button id="btnLayers" type="button" class="btn btn-info btn-xs btn-toolbar btn-tbimg-layers disabled"></button>
+            <button id="btnDraw" type="button" class="btn btn-info btn-xs btn-toolbar btn-tbimg-draw disabled"></button>
+            &nbsp;&nbsp;&nbsp;&nbsp;<input id="inpQuery" type="text" class="form-control inp-small" placeholder="{enter search}" size="25" disabled>
+            <button id="btnQuery" type="button" class="btn btn-info btn-xs btn-toolbar btn-tbimg-query disabled"></button>
+        </div>
+        <div class="col-xs-4 margin-zero btn-group right">
+            <button id="btnOptions" type="button" class="btn btn-info btn-xs btn-toolbar btn-tbimg-options disabled"></button>
+            <button id="btnStatus" type="button" class="btn btn-info btn-xs btn-toolbar btn-tbimg-status disabled"></button>
+            <button id="btnReset" type="button" class="btn btn-warning btn-xs btn-toolbar btn-tbimg-reset btn-right"></button>
+        </div>
+    </div>
+    <div class="row-content row margin-zero">
+        <div id="divMap" class="column margin-zero scroll-off"></div>
+    </div>
+    <div class="row-status row margin-zero">
+        <div id="divStatus" class="col-xs-12 margin-zero small div-status" style="text-align: right;">
+        </div>
+    </div>
+    <div id="waitingImage" class="waitingImage">
+        <image src="widget/images/loading_blue.gif" width="50px" height="50px"></image>
+    </div>
+</body>
+
+</html>

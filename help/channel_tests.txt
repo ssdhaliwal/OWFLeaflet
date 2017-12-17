@@ -1,0 +1,31 @@
+map.status.request;map.view.zoom;map.view.center.overlay;map.view.center.feature;map.view.center.location;map.view.center.bounds;map.view.area.selected;map.status.mousemove;map.status.initialization;map.error;map.status.view;map.status.format;map.status.selected;map.status.about
+
+map.status.request
+{
+  "types": ["view", "format", "selected", "about", "initialization"]
+}
+
+map.view.zoom
+{
+  "range": 4
+}
+
+map.view.center.location
+{
+  "location": {
+    "lat": 36.6654189, 
+    "lon": 88.661640
+  }, 
+  "zoom": 4
+}
+
+map.view.center.bounds
+{"bounds":{"southWest":{"lat":19.80805412808859,"lon":-134.29687500000003},"northEast":{"lat":55.32914440840507,"lon":-62.92968750000001}},"zoom":4}
+
+map.error
+{
+  "sender": string (required); 
+  "type": string (required); 
+  "msg": object (required); 
+  "error": string (required)
+}
