@@ -312,7 +312,38 @@ var WidgetObject = (function () {
     Widget.prototype.onClick = function (event) {
         var self = this;
 
-        console.log(event);
+        var latlngFixed = self._map.wrapLatLng(event.latlng);
+        var message = {
+            "lat": latlngFixed.lat,
+            "lon": latlngFixed.lng,
+            "buttons": event.originalEvent.buttons,
+            "type": event.type,
+            "keys": [],
+            "time": {
+                "timeStamp": event.originalEvent.timeStamp
+            }
+        };
+
+        // fix alt keys
+        if (event.originalEvent.altKey) {
+            message.keys.push("alt");
+        }
+        if (event.originalEvent.ctrlKey) {
+            message.keys.push("ctrl");
+        }
+        if (event.originalEvent.shiftKey) {
+            message.keys.push("shift");
+        }
+        if (event.originalEvent.metaKey) {
+            message.keys.push("meta");
+        }
+
+        // fix event type
+        var eventType = message.type;
+        if ((message.type === "click") || (message.type === 'dblclick')) {
+            eventType = 'clicked';
+        }
+        self.sendChannelMessage("map.view." + eventType, message);
     }
     Widget.prototype.onMouseMove = function (event) {
         var self = this;
@@ -333,7 +364,7 @@ var WidgetObject = (function () {
 
         // check if mousemove event is set to broadcast
         if (gConfigObject.map.events.mousemove) {
-            self.sendChannelMessage("map.status.mousemove", message);
+            self.sendChannelMessage("map.view.mousemove", message);
         }
     }
     Widget.prototype.onMapLoad = function (event) {
@@ -391,7 +422,7 @@ var WidgetObject = (function () {
         // map.view.center.location
         // map.view.center.bounds
         // map.view.clicked
-        self._map.on('click', function (event) {
+        self._map.on('click dblclick mousedown mouseup', function (event) {
             self.onClick(event);
         });
 

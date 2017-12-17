@@ -1,4 +1,4 @@
-map.status.request;map.view.zoom;map.view.center.overlay;map.view.center.feature;map.view.center.location;map.view.center.bounds;map.view.area.selected;map.status.mousemove;map.status.initialization;map.error;map.status.view;map.status.format;map.status.selected;map.status.about
+map.status.request;map.view.zoom;map.view.center.overlay;map.view.center.feature;map.view.center.location;map.view.center.bounds;map.view.area.selected;map.status.initialization;map.error;map.status.view;map.status.format;map.status.selected;map.status.about;map.view.clicked;map.view.mousemove
 
 map.status.request
 {
@@ -28,4 +28,14 @@ map.error
   "type": string (required); 
   "msg": object (required); 
   "error": string (required)
+}
+
+map.view.clicked
+{
+	lat:
+	lon:
+	button:
+	type:
+	keys:
+	time:
 }
