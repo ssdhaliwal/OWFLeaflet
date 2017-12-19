@@ -18,6 +18,9 @@ var WidgetObject = (function () {
 
         // user object
         this._state = {};
+        this._overlays = {};
+        this._overlayFeatureList = [];
+        this._featureOverlayList = [];
 
         // timer tracking
         this._Interval = {};
@@ -132,6 +135,10 @@ var WidgetObject = (function () {
         self._state[key] = value;
     }
 
+    Widget.prototype.resizeMap = function() {
+        $('#divMap').css("height", ($('body').height() - $(".navbar")[0].clientHeight) - 2);
+    }
+
     Widget.prototype.documentBindings = function () {
         var self = this;
         // prevent document to show contextmenu
@@ -141,7 +148,9 @@ var WidgetObject = (function () {
         //});
 
         // global resize event
-        $(window).resize(function () {});
+        $(window).resize(function () {
+            self.resizeMap();
+        });
     }
 
     // component level events
@@ -149,6 +158,13 @@ var WidgetObject = (function () {
         var self = this;
 
         // detect change to the div
+        $(".navbar-toggle").on('click', function () {});
+        $(".navbar-collapse").on('shown.bs.collapse', function () {
+            $("body").addClass("body-overflow");
+        });
+        $(".navbar-collapse").on('hidden.bs.collapse', function () {
+            $("body").removeClass("body-overflow");
+        });
 
         // click handler for userInfo button
         self._btnMaps.click(function () {});
@@ -298,6 +314,7 @@ var WidgetObject = (function () {
 
             // notify widget is ready
             OWF.notifyWidgetReady();
+            self.resizeMap();
 
             self.displayNotification("widget initialization complete", "info");
             self.waitingStatus();
@@ -464,7 +481,7 @@ var WidgetObject = (function () {
             if (item === "view") {
                 var result = {};
                 var bounds = self._map.getBounds();
-                var boundsFixed = 
+                var boundsFixed =
                     self._map.wrapLatLngBounds([
                         [bounds._southWest.lat, bounds._southWest.lng],
                         [bounds._northEast.lat, bounds._northEast.lng]
@@ -564,10 +581,10 @@ var WidgetObject = (function () {
         var self = this;
 
         var payload = JSON.parse(message);
-        
+
         // adjust zoom as needed
         var zoom = self.checkZoomRange(payload.zoom);
-        
+
         // adjust map to bounds provided
         self._map.setView(
             [payload.location.lat, payload.location.lon], zoom
@@ -583,10 +600,10 @@ var WidgetObject = (function () {
         var self = this;
 
         var payload = JSON.parse(message);
-        
+
         // adjust zoom as needed
         var zoom = self.checkZoomRange(payload.zoom);
-        
+
         // adjust map to bounds provided
         self._map.flyToBounds(
             [
