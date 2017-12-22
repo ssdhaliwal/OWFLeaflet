@@ -22,6 +22,55 @@ var WidgetObject = (function () {
         this._overlayFeatureList = [];
         this._featureOverlayList = [];
 
+        this._tvOverlayData = [{
+                text: 'Parent 1',
+                href: '#parent1',
+                tags: ['4'],
+                nodes: [{
+                        text: 'Child 1',
+                        href: '#child1',
+                        tags: ['2'],
+                        nodes: [{
+                                text: 'Grandchild 1',
+                                href: '#grandchild1',
+                                tags: ['0']
+                            },
+                            {
+                                text: 'Grandchild 2',
+                                href: '#grandchild2',
+                                tags: ['0']
+                            }
+                        ]
+                    },
+                    {
+                        text: 'Child 2',
+                        href: '#child2',
+                        tags: ['0']
+                    }
+                ]
+            },
+            {
+                text: 'Parent 2',
+                href: '#parent2',
+                tags: ['0']
+            },
+            {
+                text: 'Parent 3',
+                href: '#parent3',
+                tags: ['0']
+            },
+            {
+                text: 'Parent 4',
+                href: '#parent4',
+                tags: ['0']
+            },
+            {
+                text: 'Parent 5',
+                href: '#parent5',
+                tags: ['0']
+            }
+        ];
+
         // timer tracking
         this._Interval = {};
 
@@ -37,6 +86,7 @@ var WidgetObject = (function () {
         };
 
         // waiting image
+        this._menuClickOK = true;
         this._WaitingIcon = $("#waitingImage");
 
         // external objects
@@ -54,6 +104,9 @@ var WidgetObject = (function () {
         this._btnOptions = $("#btnOptions");
         this._btnStatus = $("#btnStatus");
         this._btnReset = $("#btnReset");
+
+        // overlay view
+        this._tvOverlay = null;
     }
 
     // ----- start ----- common widget functions ----- start ----
@@ -135,7 +188,7 @@ var WidgetObject = (function () {
         self._state[key] = value;
     }
 
-    Widget.prototype.resizeMap = function() {
+    Widget.prototype.resizeMap = function () {
         $('#divMap').css("height", ($('body').height() - $(".navbar")[0].clientHeight) - 2);
     }
 
@@ -151,13 +204,28 @@ var WidgetObject = (function () {
         $(window).resize(function () {
             self.resizeMap();
         });
+
+        // global click event
+        $('body').on('click', function (e) {
+            // manage the drop-down close
+            self._menuCloseOK = true;
+
+            // if this is a node-treeView; then we don't want to close
+            if (e.target.parentNode) {
+                if ($(e.target.parentNode).hasClass("node-treeView")) {
+                    self._menuCloseOK = false;
+                } else {
+                    $('.dropdown.open').removeClass('open');
+                }
+            }
+        });
     }
 
     // component level events
     Widget.prototype.componentBindings = function () {
         var self = this;
 
-        // detect change to the div
+        // detect change to navbar size
         $(".navbar-toggle").on('click', function () {});
         $(".navbar-collapse").on('shown.bs.collapse', function () {
             $("body").addClass("body-overflow");
@@ -165,6 +233,23 @@ var WidgetObject = (function () {
         $(".navbar-collapse").on('hidden.bs.collapse', function () {
             $("body").removeClass("body-overflow");
         });
+
+        // detect change to drop-down close and ignore it
+        $(".navbar-collapse").on('hide.bs.dropdown', function (e) {
+            var target = $(e.target);
+
+            if (target.hasClass("keepopen") || target.parents(".keepopen").length) {
+                if (self._menuCloseOK) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                return true;
+            }
+        });
+
+        // detect change to the div
 
         // click handler for userInfo button
         self._btnMaps.click(function () {});
@@ -254,6 +339,35 @@ var WidgetObject = (function () {
         });
     }
 
+    // add basemap links to the menu
+    Widget.prototype.addBaseMaps = function () {
+        var self = this;
+
+        // basemaps
+        $("#mapMenuItems").append("<li><a href='#'>Map #1</a></li>");
+    }
+
+    // add layer links to the menu
+    Widget.prototype.addLayerMaps = function () {
+        var self = this;
+
+        // overlay/feature layers
+        //$("#layerMenuItems").append("<li><a href='#'>Layer #1</a></li>");
+        self._tvOverlay = $('#treeView').treeview({
+            data: self._tvOverlayData,
+            showIcon: false,
+            showCheckbox: true,
+            onNodeChecked: function (event, node) {
+                //$('#checkable-output').prepend('<p>' + node.text + ' was checked</p>');
+                console.log(node.text);
+            },
+            onNodeUnchecked: function (event, node) {
+                //$('#checkable-output').prepend('<p>' + node.text + ' was unchecked</p>');
+                console.log(node.text);
+            }
+        });
+    }
+
     // initialize for class (fixes the html components)
     Widget.prototype.initialize = function () {
         var self = this;
@@ -315,6 +429,14 @@ var WidgetObject = (function () {
             // notify widget is ready
             OWF.notifyWidgetReady();
             self.resizeMap();
+
+            // add basemaps in a second
+            self._Interval.t1 = setInterval(function () {
+                clearInterval(self._Interval.t1);
+
+                self.addBaseMaps();
+                self.addLayerMaps();
+            }, 1000);
 
             self.displayNotification("widget initialization complete", "info");
             self.waitingStatus();

@@ -20,15 +20,17 @@ requirejs.config({
         //    exports: 'Backbone'
         //},
         "bootstrap": {
-            "deps": ['jquery']
+            "deps": ["jquery"]
         },
-        'handlebars': {
-            exports: 'Handlebars'
+        "handlebars": {
+            exports: "Handlebars"
         }
     }
 });
 
-requirejs(['jquery', 'lodash', 'handlebars', 'leaflet', 'main', 'bootstrap'],
+requirejs(['jquery', 'lodash', 'handlebars', 'leaflet', 'main',
+        'bootstrap'
+    ],
     function ($, lo, handlebars, L, main) {
         owfdojo.addOnLoad(function () {
             $(document).ready(function () {

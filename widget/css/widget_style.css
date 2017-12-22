@@ -1,8 +1,12 @@
+.input-sm2 {
+    height: 22px;
+    font-size: 10px;
+    line-height: 1;
+    border-radius: 3px
+}
 
 .map-container {
-    padding: 0px;
-    padding-left: 0px !important;
-    padding-right: 0px !important;
+    padding: 0 0 0 0 !important;
 }
 
 #divMap {
