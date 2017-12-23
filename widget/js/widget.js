@@ -94,7 +94,8 @@ var WidgetObject = (function () {
         // widget elements
         this._divMap = $("#divMap");
         this._divStatus = $("#divStatus");
-        this._map;
+        this._baseMapTile = null;
+        this._map = null;
 
         // widget buttons
         this._btnMaps = $("#btnMaps");
@@ -226,11 +227,12 @@ var WidgetObject = (function () {
         var self = this;
 
         // detect change to navbar size
-        $(".navbar-toggle").on('click', function () {});
-        $(".navbar-collapse").on('shown.bs.collapse', function () {
+        $(".navbar-toggle").on('click', function (e) {
+        });
+        $(".navbar-collapse").on('shown.bs.collapse', function (e) {
             $("body").addClass("body-overflow");
         });
-        $(".navbar-collapse").on('hidden.bs.collapse', function () {
+        $(".navbar-collapse").on('hidden.bs.collapse', function (e) {
             $("body").removeClass("body-overflow");
         });
 
@@ -343,8 +345,33 @@ var WidgetObject = (function () {
     Widget.prototype.addBaseMaps = function () {
         var self = this;
 
-        // basemaps
-        $("#mapMenuItems").append("<li><a href='#'>Map #1</a></li>");
+        // load basemaps
+        $.each(gConfigObject.map.basemaps, function(index, item) {
+            $("#mapMenuItems").append("<li><a class='mapOverlay' href='#' data-mapid='" + index + "'>" + item[0] + "</a></li>");            
+        });
+
+        $(".mapOverlay").on('click', function (e) {
+            var mapId = $(e.target).data("mapid");
+            var mapConfig = gConfigObject.map.basemaps[mapId];
+
+            // remove current
+            if (self._baseMapTile) {
+                self._baseMapTile.removeFrom(self._map);
+                self._baseMapTile = undefined;
+            }
+
+            // update options
+            var options = {};
+            if (mapConfig[3]) {
+                $.each(mapConfig[3], function(index, item) {
+                    options[index] = item;
+                });
+            }
+            options.attribution = mapConfig[2];
+
+            // add new
+            self._baseMapTile = L.tileLayer(mapConfig[1], options).addTo(self._map);
+        });
     }
 
     // add layer links to the menu
@@ -421,7 +448,7 @@ var WidgetObject = (function () {
 
             // link map events
             self.setCMAPIPublications();
-            var Esri_WorldStreetMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+            self._baseMapTile = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
             }).addTo(self._map);
             self.setCMAPISubscriptions();
