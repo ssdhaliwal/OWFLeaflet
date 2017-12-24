@@ -39,7 +39,7 @@ var WidgetObject = (function () {
             mapOverlayCreate: "map.overlay.create",
             mapOverlayRemove: "map.overlay.remove",
             mapOverlayHide: "map.overlay.hide",
-            mapoverlayShow: "map.overlay.show",
+            mapOverlayShow: "map.overlay.show",
             mapOverlayUpdate: "map.overlay.update"
         };
 
@@ -766,12 +766,13 @@ var WidgetObject = (function () {
             payload["name"] = payload["overlayId"];
         }
 
-        // if parent id is empty
+        // local vars
         var nodes, parentFound, nodeFound;
+
         // find all nodes matching parentId
         if (payload.hasOwnProperty("parentId")) {
-            nodes = $('#treeView').treeview('findNodes', ['^'+payload.parentId+'$', 'overlayId']);
-            $.each(nodes, function(index, item) {
+            nodes = $('#treeView').treeview('findNodes', ['^' + payload.parentId + '$', 'overlayId']);
+            $.each(nodes, function (index, item) {
                 if (item.overlayId === payload.parentId) {
                     parentFound = item;
                     return;
@@ -780,8 +781,8 @@ var WidgetObject = (function () {
         }
 
         // search for name in list
-        nodes = $('#treeView').treeview('findNodes', ['^'+payload.name+'$', 'text']);
-        $.each(nodes, function(index, item) {
+        nodes = $('#treeView').treeview('findNodes', ['^' + payload.name + '$', 'text']);
+        $.each(nodes, function (index, item) {
             if (item.text === payload.name) {
                 nodeFound = item;
                 return;
@@ -790,26 +791,105 @@ var WidgetObject = (function () {
 
         // name not found, add
         if (!nodeFound) {
-            $('#treeView').treeview('addNode', [{text: payload.name,
-                overlayId: payload.overlayId}, parentFound]);
+            $('#treeView').treeview('addNode', [{
+                text: payload.name,
+                overlayId: payload.overlayId,
+                state: {
+                    checked: true
+                }
+            }, parentFound]);
+        }
+    }
+
+    Widget.prototype.onRecvMapOverlayRemove = function (sender, message) {
+        var self = this;
+
+        var requestor = JSON.parse(sender);
+        var payload = JSON.parse(message);
+
+        // parse message, if overlay exists - ignore, else add
+        if (!payload.hasOwnProperty("overlayId")) {
+            payload["overlayId"] = requestor.id;
+        }
+
+        // local vars
+        var nodes, nodeFound;
+
+        // search for name in list
+        nodes = $('#treeView').treeview('findNodes', ['^' + payload.overlayId + '$', 'overlayId']);
+        $.each(nodes, function (index, item) {
+            if (item.overlayId === payload.overlayId) {
+                nodeFound = item;
+                return;
+            }
+        });
+
+        // name found, remove
+        if (nodeFound) {
+            $('#treeView').treeview('removeNode', [nodeFound]);
+        }
+    }
+
+    Widget.prototype.onRecvMapOverlayHide = function (sender, message) {
+        var self = this;
+
+        var requestor = JSON.parse(sender);
+        var payload = JSON.parse(message);
+
+        // parse message, if overlay exists - ignore, else add
+        if (!payload.hasOwnProperty("overlayId")) {
+            payload["overlayId"] = requestor.id;
+        }
+
+        // local vars
+        var nodes, nodeFound;
+
+        // search for name in list
+        nodes = $('#treeView').treeview('findNodes', ['^' + payload.overlayId + '$', 'overlayId']);
+        $.each(nodes, function (index, item) {
+            if (item.overlayId === payload.overlayId) {
+                nodeFound = item;
+                return;
+            }
+        });
+
+        // name found, check
+        if (nodeFound) {
+            $('#treeView').treeview('uncheckNode', [nodeFound]);
+        }
+    }
+
+    Widget.prototype.onRecvMapOverlayShow = function (sender, message) {
+        var self = this;
+
+        var requestor = JSON.parse(sender);
+        var payload = JSON.parse(message);
+
+        // parse message, if overlay exists - ignore, else add
+        if (!payload.hasOwnProperty("overlayId")) {
+            payload["overlayId"] = requestor.id;
+        }
+
+        // local vars
+        var nodes, nodeFound;
+
+        // search for name in list
+        nodes = $('#treeView').treeview('findNodes', ['^' + payload.overlayId + '$', 'overlayId']);
+        $.each(nodes, function (index, item) {
+            if (item.overlayId === payload.overlayId) {
+                nodeFound = item;
+                return;
+            }
+        });
+
+        // name found, check
+        if (nodeFound) {
+            $('#treeView').treeview('checkNode', [nodeFound]);
         }
     }
 
     /* pending */
-    Widget.prototype.onRecvMapOverlayRemove = function (sender, message) {
-    }
-
-    /* pending */
-    Widget.prototype.onRecvMapOverlayHide = function (sender, message) {
-    }
-
-    /* pending */
-    Widget.prototype.onRecvMapOverlayShow = function (sender, message) {
-    }
-
-    /* pending */
-    Widget.prototype.onRecvMapOverlayUpdate = function (sender, message) {
-    }
+    Widget.prototype.onRecvMapOverlayUpdate = function (sender, message) {}
 
     Widget.prototype.clearCMAPISubscriptions = function () {
         var self = this;
