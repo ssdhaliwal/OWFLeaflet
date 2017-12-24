@@ -22,54 +22,7 @@ var WidgetObject = (function () {
         this._overlayFeatureList = [];
         this._featureOverlayList = [];
 
-        this._tvOverlayData = [{
-                text: 'Parent 1',
-                href: '#parent1',
-                tags: ['4'],
-                nodes: [{
-                        text: 'Child 1',
-                        href: '#child1',
-                        tags: ['2'],
-                        nodes: [{
-                                text: 'Grandchild 1',
-                                href: '#grandchild1',
-                                tags: ['0']
-                            },
-                            {
-                                text: 'Grandchild 2',
-                                href: '#grandchild2',
-                                tags: ['0']
-                            }
-                        ]
-                    },
-                    {
-                        text: 'Child 2',
-                        href: '#child2',
-                        tags: ['0']
-                    }
-                ]
-            },
-            {
-                text: 'Parent 2',
-                href: '#parent2',
-                tags: ['0']
-            },
-            {
-                text: 'Parent 3',
-                href: '#parent3',
-                tags: ['0']
-            },
-            {
-                text: 'Parent 4',
-                href: '#parent4',
-                tags: ['0']
-            },
-            {
-                text: 'Parent 5',
-                href: '#parent5',
-                tags: ['0']
-            }
-        ];
+        this._tvOverlayData = [];
 
         // timer tracking
         this._Interval = {};
@@ -82,7 +35,12 @@ var WidgetObject = (function () {
             mapViewCenterFeature: "map.view.center.feature",
             mapViewCenterLocation: "map.view.center.location",
             mapViewCenterBounds: "map.view.center.bounds",
-            mapViewAreaSelected: "map.view.area.selected"
+            mapViewAreaSelected: "map.view.area.selected",
+            mapOverlayCreate: "map.overlay.create",
+            mapOverlayRemove: "map.overlay.remove",
+            mapOverlayHide: "map.overlay.hide",
+            mapoverlayShow: "map.overlay.show",
+            mapOverlayUpdate: "map.overlay.update"
         };
 
         // waiting image
@@ -227,8 +185,7 @@ var WidgetObject = (function () {
         var self = this;
 
         // detect change to navbar size
-        $(".navbar-toggle").on('click', function (e) {
-        });
+        $(".navbar-toggle").on('click', function (e) {});
         $(".navbar-collapse").on('shown.bs.collapse', function (e) {
             $("body").addClass("body-overflow");
         });
@@ -346,8 +303,8 @@ var WidgetObject = (function () {
         var self = this;
 
         // load basemaps
-        $.each(gConfigObject.map.basemaps, function(index, item) {
-            $("#mapMenuItems").append("<li><a class='mapOverlay' href='#' data-mapid='" + index + "'>" + item[0] + "</a></li>");            
+        $.each(gConfigObject.map.basemaps, function (index, item) {
+            $("#mapMenuItems").append("<li><a class='mapOverlay' href='#' data-mapid='" + index + "'>" + item[0] + "</a></li>");
         });
 
         $(".mapOverlay").on('click', function (e) {
@@ -363,7 +320,7 @@ var WidgetObject = (function () {
             // update options
             var options = {};
             if (mapConfig[3]) {
-                $.each(mapConfig[3], function(index, item) {
+                $.each(mapConfig[3], function (index, item) {
                     options[index] = item;
                 });
             }
@@ -396,7 +353,7 @@ var WidgetObject = (function () {
     }
 
     // initialize for class (fixes the html components)
-    Widget.prototype.initialize = function () {
+    Widget.prototype.initialize = function (XMLObject, KMLLayerObject) {
         var self = this;
 
         // set initial state of the controls
@@ -423,6 +380,8 @@ var WidgetObject = (function () {
         });
 
         // initialize external objects
+        self.setState("XMLObject", XMLObject);
+        self.setState("KMLLayerObject", KMLLayerObject);
         self.setState("instanceId", OWF.getInstanceId());
         self.setState("widgetGuid", OWF.getWidgetGuid());
 
@@ -573,6 +532,23 @@ var WidgetObject = (function () {
     Widget.prototype.setCMAPIPublications = function () {
         var self = this;
 
+        //var kml = self.getState("KMLLayerObject");
+        //var kmlLayer = new kml("TEST CONTENT", {
+        //    opt1: "test",
+        //    opt2: "test2"
+        //});
+
+        //var xml = self.getState("XMLObject");
+        //var xmlObject = new xml(xmlContent, {
+        //        valueNode: "_value",
+        //        textNode: "_text",
+        //        attributeNode: "_attr"
+        //    });
+
+        //var level = 0;
+        //var result = xmlObject.toJSON(null, level, "");
+        //console.log(result);
+
         // map.feature.plot
         // map.feature.plot.url
         // map.feature.unplot
@@ -714,12 +690,14 @@ var WidgetObject = (function () {
         }
     }
 
+    /* pending */
     Widget.prototype.onRecvMapViewCenterOverlay = function (sender, message) {
         var self = this;
 
         var payload = JSON.parse(message);
     }
 
+    /* pending */
     Widget.prototype.onRecvMapViewCenterFeature = function (sender, message) {
         var self = this;
 
@@ -767,10 +745,70 @@ var WidgetObject = (function () {
         }
     }
 
+    /* pending */
     Widget.prototype.onRecvMapViewAreaSelected = function (sender, message) {
         var self = this;
 
         var payload = JSON.parse(message);
+    }
+
+    Widget.prototype.onRecvMapOverlayCreate = function (sender, message) {
+        var self = this;
+
+        var requestor = JSON.parse(sender);
+        var payload = JSON.parse(message);
+
+        // parse message, if overlay exists - ignore, else add
+        if (!payload.hasOwnProperty("overlayId")) {
+            payload["overlayId"] = requestor.id;
+        }
+        if (!payload.hasOwnProperty("name")) {
+            payload["name"] = payload["overlayId"];
+        }
+
+        // if parent id is empty
+        var nodes, parentFound, nodeFound;
+        // find all nodes matching parentId
+        if (payload.hasOwnProperty("parentId")) {
+            nodes = $('#treeView').treeview('findNodes', ['^'+payload.parentId+'$', 'overlayId']);
+            $.each(nodes, function(index, item) {
+                if (item.overlayId === payload.parentId) {
+                    parentFound = item;
+                    return;
+                }
+            });
+        }
+
+        // search for name in list
+        nodes = $('#treeView').treeview('findNodes', ['^'+payload.name+'$', 'text']);
+        $.each(nodes, function(index, item) {
+            if (item.text === payload.name) {
+                nodeFound = item;
+                return;
+            }
+        });
+
+        // name not found, add
+        if (!nodeFound) {
+            $('#treeView').treeview('addNode', [{text: payload.name,
+                overlayId: payload.overlayId}, parentFound]);
+        }
+    }
+
+    /* pending */
+    Widget.prototype.onRecvMapOverlayRemove = function (sender, message) {
+    }
+
+    /* pending */
+    Widget.prototype.onRecvMapOverlayHide = function (sender, message) {
+    }
+
+    /* pending */
+    Widget.prototype.onRecvMapOverlayShow = function (sender, message) {
+    }
+
+    /* pending */
+    Widget.prototype.onRecvMapOverlayUpdate = function (sender, message) {
     }
 
     Widget.prototype.clearCMAPISubscriptions = function () {
@@ -804,6 +842,21 @@ var WidgetObject = (function () {
 
         OWF.Eventing.subscribe(self._subscriptions.mapViewAreaSelected,
             owfdojo.hitch(self, "onRecvMapViewAreaSelected"));
+
+        OWF.Eventing.subscribe(self._subscriptions.mapOverlayCreate,
+            owfdojo.hitch(self, "onRecvMapOverlayCreate"));
+
+        OWF.Eventing.subscribe(self._subscriptions.mapOverlayRemove,
+            owfdojo.hitch(self, "onRecvMapOverlayRemove"));
+
+        OWF.Eventing.subscribe(self._subscriptions.mapOverlayHide,
+            owfdojo.hitch(self, "onRecvMapOverlayHide"));
+
+        OWF.Eventing.subscribe(self._subscriptions.mapOverlayShow,
+            owfdojo.hitch(self, "onRecvMapOverlayShow"));
+
+        OWF.Eventing.subscribe(self._subscriptions.mapOverlayUpdate,
+            owfdojo.hitch(self, "onRecvMapOverlayUpdate"));
     }
     // -----  end  ----- widget functions        -----  end  ----
 

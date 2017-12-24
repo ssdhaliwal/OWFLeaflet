@@ -37,7 +37,7 @@ requirejs(['jquery', 'lodash', 'handlebars', 'leaflet', 'main',
                 window.Handlebars = handlebars;
 
                 var widget = new main.WidgetObject();
-                widget.initialize();
+                widget.initialize(main.XMLObject, main.KMLLayerObject);
             });
         });
     }

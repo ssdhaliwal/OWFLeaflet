@@ -16,6 +16,7 @@ Project to use Leaflet as map component under OWF.
 #### Dependencies
 A. JQuery
 B. Bootstrap
+B1. -> patternfly-bootstrap-treeview
 C. Handlebars
 D. Ozone Widget Framework (OWF)
 E. Javascript
