@@ -45,3 +45,7 @@ a.disabled {
     pointer-events: none;
     cursor: not-allowed;
 }
+
+.no-wrap {
+    white-space: nowrap;
+}

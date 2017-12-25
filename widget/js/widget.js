@@ -22,7 +22,8 @@ var WidgetObject = (function () {
         this._overlayFeatureList = [];
         this._featureOverlayList = [];
 
-        this._tvOverlayData = [];
+        this._tvMapData = [];
+        this._tvLayerData = [];
 
         // timer tracking
         this._Interval = {};
@@ -40,11 +41,11 @@ var WidgetObject = (function () {
             mapOverlayRemove: "map.overlay.remove",
             mapOverlayHide: "map.overlay.hide",
             mapOverlayShow: "map.overlay.show",
-            mapOverlayUpdate: "map.overlay.update"
+            mapOverlayUpdate: "map.overlay.update",
+            mapFeaturePlot: "map.feature.plot"
         };
 
         // waiting image
-        this._menuClickOK = true;
         this._WaitingIcon = $("#waitingImage");
 
         // external objects
@@ -65,7 +66,8 @@ var WidgetObject = (function () {
         this._btnReset = $("#btnReset");
 
         // overlay view
-        this._tvOverlay = null;
+        this._tvLayer = null;
+        this._tvMap = null;
     }
 
     // ----- start ----- common widget functions ----- start ----
@@ -166,16 +168,20 @@ var WidgetObject = (function () {
 
         // global click event
         $('body').on('click', function (e) {
-            // manage the drop-down close
-            self._menuCloseOK = true;
+            var target = $(e.target);
+            var parent = $(target.parent()[0]);
 
             // if this is a node-treeView; then we don't want to close
-            if (e.target.parentNode) {
-                if ($(e.target.parentNode).hasClass("node-treeView")) {
-                    self._menuCloseOK = false;
-                } else {
-                    $('.dropdown.open').removeClass('open');
-                }
+            if (target.hasClass("node-treeViewMap") ||
+                parent.hasClass("node-treeViewMap") ||
+                target.hasClass("node-treeViewLayer") ||
+                parent.hasClass("node-treeViewLayer")) {
+
+            } else {
+                $('.dropdown.open').removeClass('open');
+                $('#treeViewMap').treeview('collapseAll', {
+                    silent: true
+                });
             }
         });
     }
@@ -185,7 +191,8 @@ var WidgetObject = (function () {
         var self = this;
 
         // detect change to navbar size
-        $(".navbar-toggle").on('click', function (e) {});
+        $(".navbar .navbar-toggle .node-treeView").on('click', function (e) {});
+
         $(".navbar-collapse").on('shown.bs.collapse', function (e) {
             $("body").addClass("body-overflow");
         });
@@ -198,15 +205,13 @@ var WidgetObject = (function () {
             var target = $(e.target);
 
             if (target.hasClass("keepopen") || target.parents(".keepopen").length) {
-                if (self._menuCloseOK) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return false;
             } else {
                 return true;
             }
         });
+
+        // detect change to mapOverlay
 
         // detect change to the div
 
@@ -303,31 +308,53 @@ var WidgetObject = (function () {
         var self = this;
 
         // load basemaps
+        //$("#layerMenuItems").append("<li><a href='#'>Layer #1</a></li>");
+        var menuItem, subMenuItem;
         $.each(gConfigObject.map.basemaps, function (index, item) {
-            $("#mapMenuItems").append("<li><a class='mapOverlay' href='#' data-mapid='" + index + "'>" + item[0] + "</a></li>");
+            menuItem = {};
+            menuItem.text = index;
+            menuItem.class = "no-wrap input-sm";
+            menuItem.nodes = [];
+
+            $.each(item, function (subIndex, subItem) {
+                subMenuItem = {};
+                subMenuItem.text = subItem[0];
+                subMenuItem.class = "no-wrap input-sm";
+                subMenuItem.id = index + "_" + subIndex;
+                subMenuItem.source = subItem;
+
+                menuItem.nodes.push(subMenuItem);
+            });
+
+            self._tvMapData.push(menuItem);
         });
 
-        $(".mapOverlay").on('click', function (e) {
-            var mapId = $(e.target).data("mapid");
-            var mapConfig = gConfigObject.map.basemaps[mapId];
+        self._tvLayer = $('#treeViewMap').treeview({
+            levels: 1,
+            data: self._tvMapData,
+            showIcon: false,
+            onNodeSelected: function (event, node) {
+                // check if this is not a parent node
+                if (node.hasOwnProperty("source")) {
+                    // remove current
+                    if (self._baseMapTile) {
+                        self._baseMapTile.removeFrom(self._map);
+                        self._baseMapTile = undefined;
+                    }
 
-            // remove current
-            if (self._baseMapTile) {
-                self._baseMapTile.removeFrom(self._map);
-                self._baseMapTile = undefined;
+                    // update options
+                    var options = {};
+                    if (node.source[3]) {
+                        $.each(node.source[3], function (index, item) {
+                            options[index] = item;
+                        });
+                    }
+                    options.attribution = node.source[2];
+
+                    // add new
+                    self._baseMapTile = L.tileLayer(node.source[1], options).addTo(self._map);
+                }
             }
-
-            // update options
-            var options = {};
-            if (mapConfig[3]) {
-                $.each(mapConfig[3], function (index, item) {
-                    options[index] = item;
-                });
-            }
-            options.attribution = mapConfig[2];
-
-            // add new
-            self._baseMapTile = L.tileLayer(mapConfig[1], options).addTo(self._map);
         });
     }
 
@@ -337,8 +364,8 @@ var WidgetObject = (function () {
 
         // overlay/feature layers
         //$("#layerMenuItems").append("<li><a href='#'>Layer #1</a></li>");
-        self._tvOverlay = $('#treeView').treeview({
-            data: self._tvOverlayData,
+        self._tvLayer = $('#treeViewLayer').treeview({
+            data: self._tvLayerData,
             showIcon: false,
             showCheckbox: true,
             onNodeChecked: function (event, node) {
@@ -434,7 +461,7 @@ var WidgetObject = (function () {
     // -----  end  ----- widget UI functions     -----  end  ----
 
     // ----- start ----- widget functions        ----- start ----
-    Widget.prototype.onClick = function (event) {
+    Widget.prototype.onMapClick = function (event) {
         var self = this;
 
         var latlngFixed = self._map.wrapLatLng(event.latlng);
@@ -470,7 +497,7 @@ var WidgetObject = (function () {
         }
         self.sendChannelMessage("map.view." + eventType, message);
     }
-    Widget.prototype.onMouseMove = function (event) {
+    Widget.prototype.onMapMouseMove = function (event) {
         var self = this;
 
         var latlngFixed = self._map.wrapLatLng(event.latlng);
@@ -565,12 +592,12 @@ var WidgetObject = (function () {
         // map.view.center.bounds
         // map.view.clicked
         self._map.on('click dblclick mousedown mouseup', function (event) {
-            self.onClick(event);
+            self.onMapClick(event);
         });
 
         // map.view.mousemove
         self._map.on('mousemove', function (event) {
-            self.onMouseMove(event);
+            self.onMapMouseMove(event);
         });
 
         // map.status.request
@@ -771,7 +798,7 @@ var WidgetObject = (function () {
 
         // find all nodes matching parentId
         if (payload.hasOwnProperty("parentId")) {
-            nodes = $('#treeView').treeview('findNodes', ['^' + payload.parentId + '$', 'overlayId']);
+            nodes = $('#treeViewLayer').treeview('findNodes', ['^' + payload.parentId + '$', 'overlayId']);
             $.each(nodes, function (index, item) {
                 if (item.overlayId === payload.parentId) {
                     parentFound = item;
@@ -781,7 +808,7 @@ var WidgetObject = (function () {
         }
 
         // search for name in list
-        nodes = $('#treeView').treeview('findNodes', ['^' + payload.name + '$', 'text']);
+        nodes = $('#treeViewLayer').treeview('findNodes', ['^' + payload.name + '$', 'text']);
         $.each(nodes, function (index, item) {
             if (item.text === payload.name) {
                 nodeFound = item;
@@ -791,7 +818,7 @@ var WidgetObject = (function () {
 
         // name not found, add
         if (!nodeFound) {
-            $('#treeView').treeview('addNode', [{
+            $('#treeViewLayer').treeview('addNode', [{
                 text: payload.name,
                 overlayId: payload.overlayId,
                 state: {
@@ -816,7 +843,7 @@ var WidgetObject = (function () {
         var nodes, nodeFound;
 
         // search for name in list
-        nodes = $('#treeView').treeview('findNodes', ['^' + payload.overlayId + '$', 'overlayId']);
+        nodes = $('#treeViewLayer').treeview('findNodes', ['^' + payload.overlayId + '$', 'overlayId']);
         $.each(nodes, function (index, item) {
             if (item.overlayId === payload.overlayId) {
                 nodeFound = item;
@@ -826,7 +853,7 @@ var WidgetObject = (function () {
 
         // name found, remove
         if (nodeFound) {
-            $('#treeView').treeview('removeNode', [nodeFound]);
+            $('#treeViewLayer').treeview('removeNode', [nodeFound]);
         }
     }
 
@@ -845,7 +872,7 @@ var WidgetObject = (function () {
         var nodes, nodeFound;
 
         // search for name in list
-        nodes = $('#treeView').treeview('findNodes', ['^' + payload.overlayId + '$', 'overlayId']);
+        nodes = $('#treeViewLayer').treeview('findNodes', ['^' + payload.overlayId + '$', 'overlayId']);
         $.each(nodes, function (index, item) {
             if (item.overlayId === payload.overlayId) {
                 nodeFound = item;
@@ -855,7 +882,7 @@ var WidgetObject = (function () {
 
         // name found, check
         if (nodeFound) {
-            $('#treeView').treeview('uncheckNode', [nodeFound]);
+            $('#treeViewLayer').treeview('uncheckNode', [nodeFound]);
         }
     }
 
@@ -874,7 +901,7 @@ var WidgetObject = (function () {
         var nodes, nodeFound;
 
         // search for name in list
-        nodes = $('#treeView').treeview('findNodes', ['^' + payload.overlayId + '$', 'overlayId']);
+        nodes = $('#treeViewLayer').treeview('findNodes', ['^' + payload.overlayId + '$', 'overlayId']);
         $.each(nodes, function (index, item) {
             if (item.overlayId === payload.overlayId) {
                 nodeFound = item;
@@ -884,12 +911,21 @@ var WidgetObject = (function () {
 
         // name found, check
         if (nodeFound) {
-            $('#treeView').treeview('checkNode', [nodeFound]);
+            $('#treeViewLayer').treeview('checkNode', [nodeFound]);
         }
     }
 
     /* pending */
     Widget.prototype.onRecvMapOverlayUpdate = function (sender, message) {}
+
+    /* pending */
+    Widget.prototype.onRecvMapFeaturePlot = function (sender, message) {
+        var self = this;
+
+        var requestor = JSON.parse(sender);
+        var payload = JSON.parse(message);
+
+    }
 
     Widget.prototype.clearCMAPISubscriptions = function () {
         var self = this;
@@ -937,6 +973,9 @@ var WidgetObject = (function () {
 
         OWF.Eventing.subscribe(self._subscriptions.mapOverlayUpdate,
             owfdojo.hitch(self, "onRecvMapOverlayUpdate"));
+
+        OWF.Eventing.subscribe(self._subscriptions.mapFeaturePlot,
+            owfdojo.hitch(self, "onRecvMapFeaturePlot"));
     }
     // -----  end  ----- widget functions        -----  end  ----
 
