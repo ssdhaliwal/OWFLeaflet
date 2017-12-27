@@ -21,5 +21,32 @@ var KMLLayerObject = (function () {
         self._config.content = content;
     }
 
+    KMLLayer.prototype.getPlacemarks = function() {
+        var self = this;
+
+        // collect all placemarks
+        // - collect styleurl info
+        // - - follow the closest document backwards.
+        // create the placemark
+        // http://docs.opengeospatial.org/is/12-007r2/12-007r2.html
+        var masterStyles = [];
+        $.each(result, function(index, item) {
+            if (index === "styleUrl") {
+                masterStyles.push(item);
+            }
+        });
+        
+        var styleList = [];
+        var placemarks = [];
+        $.each(result, function(index, item) {
+            if ((index === "Document") || (index === "Folder")) {
+
+            } else 
+            if (index === "Placemark") {
+                placemark.push(item);
+            }
+        });
+    }
+
     return KMLLayer;
 })();

@@ -559,23 +559,6 @@ var WidgetObject = (function () {
     Widget.prototype.setCMAPIPublications = function () {
         var self = this;
 
-        //var kml = self.getState("KMLLayerObject");
-        //var kmlLayer = new kml("TEST CONTENT", {
-        //    opt1: "test",
-        //    opt2: "test2"
-        //});
-
-        //var xml = self.getState("XMLObject");
-        //var xmlObject = new xml(xmlContent, {
-        //        valueNode: "_value",
-        //        textNode: "_text",
-        //        attributeNode: "_attr"
-        //    });
-
-        //var level = 0;
-        //var result = xmlObject.toJSON(null, level, "");
-        //console.log(result);
-
         // map.feature.plot
         // map.feature.plot.url
         // map.feature.unplot
@@ -925,6 +908,25 @@ var WidgetObject = (function () {
         var requestor = JSON.parse(sender);
         var payload = JSON.parse(message);
 
+        var xml = self.getState("XMLObject");
+        var xmlObject = new xml(payload.feature, {
+                valueNode: "_value",
+                textNode: "_text",
+                attributeNode: "_attr",
+                addNodeInfo: "true",
+                addKMLContainer: "true"
+            });
+
+        var level = 0;
+        var result = xmlObject.toJSON(null, level, "", null);
+        console.log(result);
+
+        //var kml = self.getState("KMLLayerObject");
+        //var kmlLayer = new kml(result, {
+        //    opt1: "test",
+        //    opt2: "test2"
+        //});
+        //kmlLayer.getPlacemarks();
     }
 
     Widget.prototype.clearCMAPISubscriptions = function () {

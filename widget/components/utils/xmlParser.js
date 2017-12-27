@@ -11,7 +11,9 @@ var XMLObject = (function () {
         this._config = {
             valueNode: "#value",
             textNode: "#text",
-            attributeNode: "#attr"
+            attributeNode: "#attr",
+            addNodeInfo: false,
+            addKMLContainer: false
         };
         this._data = {};
 
@@ -63,25 +65,45 @@ var XMLObject = (function () {
         }
     }
 
-    XML.prototype.toJSON = function (node, level, path) {
+    XML.prototype.toJSON = function (node, level, path, container) {
         var self = this;
         var result = {};
 
         // initialize the result for return
-        var root = (node === null) ? self._data : node;
-        var nodeName = (root.nodeName) ? root.nodeName : "root";
+        node = (node === null) ? self._data : node;
+        var nodeName = node.nodeName;
+        var prevContainer = container;
 
-        path += "/" + nodeName;
-        result.path = path;
-        result.level = level;
-        result.nodeType = root.nodeType;
-        self._getElementInfo(root, result);
+        if (self._config.addKMLContainer) {
+            if (!container) {
+                if (nodeName === "Document") {
+                    container = node;
+                    node.container = undefined;
+                }
+            } else {
+                if (nodeName === "Document") {
+                    node.prevContainer = container;
+                    container = node;
+                }
+            }
+
+            result.container = container;
+        }
+
+        if (self._config.addNodeInfo) {
+            path += "/" + nodeName;
+            result.path = path;
+            result.level = level;
+            result.nodeType = node.nodeType;
+        }
+
+        self._getElementInfo(node, result);
 
         // adjust for next level/path
         level++;
         var childName = "";
         var nodeValue;
-        $.each(root.children, function (index, item) {
+        $.each(node.children, function (index, item) {
             childName = item.nodeName;
             if (result.hasOwnProperty(childName)) {
                 if (!Array.isArray(result[childName])) {
@@ -91,9 +113,20 @@ var XMLObject = (function () {
 
             // process children if any
             if (item.children.length > 0) {
-                nodeValue = self.toJSON(item, level, path);
+                nodeValue = self.toJSON(item, level, path, container);
             } else {
                 nodeValue = {};
+
+                if (self._config.addKMLContainer) {
+                    nodeValue.container = container;
+                }
+
+                if (self._config.addNodeInfo) {
+                    nodeValue.path = path + "/" + childName;
+                    nodeValue.level = level + 1;
+                    nodeValue.nodeType = item.nodeType;
+                }
+
                 self._getElementInfo(item, nodeValue);
             }
 
