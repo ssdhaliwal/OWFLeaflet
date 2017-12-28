@@ -25,20 +25,40 @@ var XMLObject = (function () {
         this._initialize(document, options);
     }
 
+    XML.prototype.getProperty = function(key) {
+        var self = this;
+
+        if (self._config.hasOwnProperty(key)) {
+            return self._config[key];
+        }
+    }
+
+    XML.prototype.setProperty = function(key, value) {
+        var self = this;
+
+        if (key && value) {
+            self._config[key] = value;
+        } else {
+            if (key) {
+                delete self._config[key];
+            }
+        }
+    }
+
     XML.prototype._initialize = function (document, options) {
         var self = this;
 
         // part the options and update config
         $.each(options, function (index, item) {
-            self._config[index] = item;
+            self.setProperty(index, item);
         });
 
         // store the content
-        self._config.document = document;
+        self.setProperty("document", document);
 
         // parse the content
         var parser = new DOMParser();
-        self._data = parser.parseFromString(document, "application/xml");
+        self.setProperty("data", parser.parseFromString(document, "application/xml"));
     }
 
     XML.prototype._getElementInfo = function (node, output) {
@@ -47,20 +67,20 @@ var XMLObject = (function () {
         // store value/text
         if (node.nodeType === 3) {
             if (node.nodeValue) {
-                output[self._config.valueNode] = node.nodeValue;
+                output[self.getProperty("valueNode")] = node.nodeValue;
             }
         } else
-        if (node.children.length === 0) {
+        if (node.children && (node.children.length === 0)) {
             if (node.textContent) {
-                output[self._config.textNode] = node.textContent;
+                output[self.getProperty("textNode")] = node.textContent;
             }
         }
 
         // store attributes
         if (node.attributes && (node.attributes.length > 0)) {
-            output[self._config.attributeNode] = {};
+            output[self.getProperty("attributeNode")] = {};
             $.each(node.attributes, function (index, item) {
-                output[self._config.attributeNode][item.name] = item.value;
+                output[self.getProperty("attributeNode")][item.name] = item.value;
             });
         }
     }
@@ -70,27 +90,19 @@ var XMLObject = (function () {
         var result = {};
 
         // initialize the result for return
-        node = (node === null) ? self._data : node;
+        node = (node === null) ? self.getProperty("data") : node;
         var nodeName = node.nodeName;
-        var prevContainer = container;
 
-        if (self._config.addKMLContainer) {
-            if (!container) {
-                if (nodeName === "Document") {
-                    container = node;
-                    node.container = undefined;
-                }
+        if (self.getProperty("addKMLContainer")) {
+            if (nodeName === "Document") {
+                result.parentContainer = container;
+                result.container = result;
             } else {
-                if (nodeName === "Document") {
-                    node.prevContainer = container;
-                    container = node;
-                }
+                result.container = container;
             }
-
-            result.container = container;
         }
 
-        if (self._config.addNodeInfo) {
+        if (self.getProperty("addNodeInfo")) {
             path += "/" + nodeName;
             result.path = path;
             result.level = level;
@@ -98,6 +110,9 @@ var XMLObject = (function () {
         }
 
         self._getElementInfo(node, result);
+        if ((!node.children) || (node.children.length === 0)) {
+            return result;
+        }
 
         // adjust for next level/path
         level++;
@@ -111,24 +126,7 @@ var XMLObject = (function () {
                 }
             }
 
-            // process children if any
-            if (item.children.length > 0) {
-                nodeValue = self.toJSON(item, level, path, container);
-            } else {
-                nodeValue = {};
-
-                if (self._config.addKMLContainer) {
-                    nodeValue.container = container;
-                }
-
-                if (self._config.addNodeInfo) {
-                    nodeValue.path = path + "/" + childName;
-                    nodeValue.level = level + 1;
-                    nodeValue.nodeType = item.nodeType;
-                }
-
-                self._getElementInfo(item, nodeValue);
-            }
+            nodeValue = self.toJSON(item, level, path, result.container);
 
             if (Array.isArray(result[childName])) {
                 result[childName].push(nodeValue);

@@ -921,12 +921,12 @@ var WidgetObject = (function () {
         var result = xmlObject.toJSON(null, level, "", null);
         console.log(result);
 
-        //var kml = self.getState("KMLLayerObject");
-        //var kmlLayer = new kml(result, {
-        //    opt1: "test",
-        //    opt2: "test2"
-        //});
-        //kmlLayer.getPlacemarks();
+        var kml = self.getState("KMLLayerObject");
+        var kmlLayer = new kml(result, {
+            opt1: "test",
+            opt2: "test2"
+        });
+        kmlLayer.getPlacemarks(result);
     }
 
     Widget.prototype.clearCMAPISubscriptions = function () {
