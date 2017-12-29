@@ -927,6 +927,8 @@ var WidgetObject = (function () {
             opt2: "test2"
         });
         kmlLayer.getPlacemarks(result);
+        L.featureGroup(kmlLayer.getProperty("Placemarks"))
+            .addTo(self._map);
     }
 
     Widget.prototype.clearCMAPISubscriptions = function () {

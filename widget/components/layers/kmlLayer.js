@@ -19,6 +19,14 @@ var KMLLayerObject = (function () {
 
         // store the content
         self.setProperty("content", content);
+
+        // create default icon
+        self._config.DefaultIcon = L.icon({
+            iconUrl: "https://localhost:7443/OWFLeaflet/vendor/images/marker-icon.png"
+        });
+
+        // create storage for placemarks
+        self._config.Placemarks = [];
     }
 
     KMLLayer.prototype.getProperty = function (key) {
@@ -46,13 +54,17 @@ var KMLLayerObject = (function () {
 
         // loop through the container styles
         var styleFound = false;
-        console.log(container, styleId);
+        var style = {};
+
         if (container.StyleMap) {
             if (container.StyleMap._attr.id === styleId) {
-                console.log(".. .. SM-" + container.StyleMap);
                 styleFound = true;
+
+                // now find the individual styles for the styleMap
+                style[styleId] = {};
                 $.each(container.StyleMap.Pair, function (index, item) {
-                    self._getStyle(container, item.styleUrl._text.replace("#", ""));
+                    var id = item.styleUrl._text.replace("#", "");
+                    style[styleId][id] = self._getStyle(container, id);
                 });
             }
         }
@@ -60,15 +72,16 @@ var KMLLayerObject = (function () {
         if (!styleFound && container.Style) {
             $.each(container.Style, function (index, item) {
                 if (item._attr.id === styleId) {
-                    console.log(".. .. ST-" + item);
+                    style[styleId] = item;
                     styleFound = true;
-                    return false;
                 }
             });
+        }
 
-            if (!styleFound && container.parentContainer) {
-                self._getStyle(container.parentContainer, styleId);
-            }
+        if (!styleFound && container.parentContainer) {
+            return self._getStyle(container.parentContainer, styleId);
+        } else {
+            return style;
         }
     }
 
@@ -79,56 +92,93 @@ var KMLLayerObject = (function () {
         // Point, LineString, LinearRing, Polygon, MultiGeometry, <gx:MultiTrack>, <Model>, <gx:Track>
 
         // Point
-        var style;
+        var styleId, style, marker, options = {},
+            coords, coordsArray;
         if (placemark instanceof Array) {
             $.each(placemark, function (index, item) {
                 if ((index === "container") || (index === "parentContainer")) {
 
                 } else {
-                    console.log(item);
                     self._processPlacemark(item);
-                    console.log("+++++-----+++++-----+++++-----+++++-----+++++-----+++++-----");
                 }
             });
         } else {
             if (placemark.Point) {
                 if (placemark.styleUrl) {
-                    console.log("--> Pt-" + placemark.styleUrl._text.replace("#", ""));
-                    style = self._getStyle(placemark.container, placemark.styleUrl._text.replace("#", ""));
-                } else {
-                    console.log("--> Pt-no style");
+                    styleId = placemark.styleUrl._text.replace("#", "");
+
+                    style = self._getStyle(placemark.container, styleId);
                 }
-            }
-            else if (placemark.LineString) {
-                if (placemark.styleUrl) {
-                    console.log("--> LS-" + placemark.styleUrl._text.replace("#", ""));
-                    style = self._getStyle(placemark.container, placemark.styleUrl._text.replace("#", ""));
+
+                // create marker and store it
+                if (style) {
+                    if (Object.keys(style[styleId]).length === 2) {
+                        $.each(style[styleId], function (index, item) {
+                            if (item[index].IconStyle) {
+                                if (index.toLowerCase().startsWith("normal")) {
+                                    options.iconNormal = L.icon({
+                                        iconUrl: item[index].IconStyle.Icon.href._text
+                                    });
+
+                                    options.icon = options.iconNormal;
+                                } else {
+                                    options.iconHighlight = L.icon({
+                                        iconUrl: item[index].IconStyle.Icon.href._text
+                                    });
+                                }
+                            }
+                        });
+                    } else {
+                        if (style[styleId].IconStyle) {
+                            options.iconNormal = L.icon({
+                                iconUrl: style[styleId].IconStyle.Icon.href._text
+                            });
+                            options.icon = options.iconNormal;
+                        }
+                    }
                 } else {
-                    console.log("--> LS-no style");
+                    options.icon = self.getProperty("DefaultIcon");
                 }
-            }
-            else if (placemark.LinearRing) {
-                if (placemark.styleUrl) {
-                    console.log("--> LR-" + placemark.styleUrl._text.replace("#", ""));
-                    style = self._getStyle(placemark.container, placemark.styleUrl._text.replace("#", ""));
-                } else {
-                    console.log("--> LR-no style");
+                coords = placemark.Point.coordinates._text.split(",");
+                if (placemark.name) {
+                    options.title = placemark.name._text;
                 }
-            }
-            else if (placemark.Polygon) {
+                //marker = L.marker([coords[1], coords[0]], options);
+                marker = new marker2([coords[1], coords[0]], options);
+                marker.on("mouseover", function (e) {
+                    if (e.target.options.iconHighlight.options.iconUrl != "") {
+                        e.target.setIcon(e.target.options.iconHighlight);
+                    }
+                });
+                marker.on("mouseout", function (e) {
+                    if (e.target.options.iconHighlight.options.iconUrl != "") {
+                        e.target.setIcon(e.target.options.iconNormal);
+                    }
+                });
+                self._config.Placemarks.push(marker);
+            } else if (placemark.LineString) {
                 if (placemark.styleUrl) {
-                    console.log("--> Pg-" + placemark.styleUrl._text.replace("#", ""));
-                    style = self._getStyle(placemark.container, placemark.styleUrl._text.replace("#", ""));
-                } else {
-                    console.log("--> pg-no style");
+                    var id = placemark.styleUrl._text.replace("#", "");
+
+                    style = self._getStyle(placemark.container, id);
                 }
-            }
-            else if (placemark.MultiGeometry) {
+            } else if (placemark.LinearRing) {
                 if (placemark.styleUrl) {
-                    console.log("--> MG-" + placemark.styleUrl._text.replace("#", ""));
-                    style = self._getStyle(placemark.container, placemark.styleUrl._text.replace("#", ""));
-                } else {
-                    console.log("--> MG-no style");
+                    var id = placemark.styleUrl._text.replace("#", "");
+
+                    style = self._getStyle(placemark.container, id);
+                }
+            } else if (placemark.Polygon) {
+                if (placemark.styleUrl) {
+                    var id = placemark.styleUrl._text.replace("#", "");
+
+                    style = self._getStyle(placemark.container, id);
+                }
+            } else if (placemark.MultiGeometry) {
+                if (placemark.styleUrl) {
+                    var id = placemark.styleUrl._text.replace("#", "");
+
+                    style = self._getStyle(placemark.container, id);
                 }
             }
         }
