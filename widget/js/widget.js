@@ -919,7 +919,6 @@ var WidgetObject = (function () {
 
         var level = 0;
         var result = xmlObject.toJSON(null, level, "", null);
-        console.log(result);
 
         var kml = self.getState("KMLLayerObject");
         var kmlLayer = new kml(result, {
@@ -927,8 +926,13 @@ var WidgetObject = (function () {
             opt2: "test2"
         });
         kmlLayer.getPlacemarks(result);
-        L.featureGroup(kmlLayer.getProperty("Placemarks"))
+        var featureLayer = L.featureGroup(kmlLayer.getProperty("Placemarks"))
             .addTo(self._map);
+
+        // if zoom, then focus map
+        if (payload.zoom) {
+            self._map.fitBounds(featureLayer.getBounds());
+        }
     }
 
     Widget.prototype.clearCMAPISubscriptions = function () {

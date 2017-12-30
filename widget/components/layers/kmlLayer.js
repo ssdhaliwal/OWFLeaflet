@@ -20,10 +20,28 @@ var KMLLayerObject = (function () {
         // store the content
         self.setProperty("content", content);
 
-        // create default icon
-        self._config.DefaultIcon = L.icon({
+        // create default styles for icon, lines, etc.
+        self._config.DefaultIconStyle = L.icon({
             iconUrl: "https://localhost:7443/OWFLeaflet/vendor/images/marker-icon.png"
         });
+        self._config.DefaultLineStyle = {
+            smoothFactory: 1.0,
+            stroke: true,
+            color: "#3388ff",
+            weight: 1,
+            opacity: 1.0
+        }
+        self._config.DefaultPolygonStyle = {
+            smoothFactory: 1.0,
+            stroke: true,
+            color: "#3388ff",
+            weight: 1,
+            opacity: 1.0,
+            fill: true,
+            fillColor: "#3388ff",
+            fillOpacity: 0.2,
+            fillRule: "evenodd"
+        }
 
         // create storage for placemarks
         self._config.Placemarks = [];
@@ -70,12 +88,23 @@ var KMLLayerObject = (function () {
         }
 
         if (!styleFound && container.Style) {
-            $.each(container.Style, function (index, item) {
-                if (item._attr.id === styleId) {
-                    style[styleId] = item;
+            if (Array.isArray(container.Style)) {
+                $.each(container.Style, function (index, item) {
+                    if (item._attr.id === styleId) {
+                        style[styleId] = item;
+                        styleFound = true;
+                    }
+                });
+            } else {
+                if (container.Style._attr.id === styleId) {
+                    style[styleId] = container.Style;
                     styleFound = true;
+                } else {
+                    if (container.Style.parentContainer) {
+                        return self._getStyle(container.Style.parentContainer, styleId);
+                    }
                 }
-            });
+            }
         }
 
         if (!styleFound && container.parentContainer) {
@@ -85,15 +114,221 @@ var KMLLayerObject = (function () {
         }
     }
 
+    KMLLayer.prototype._getPoint = function(point, name, styleId, style) {
+        var self = this;
+        var result, options = {}, coords;
+        
+        // create marker and return it
+        options.icon = self.getProperty("DefaultIconStyle");
+        if (style) {
+            if (Object.keys(style[styleId]).length === 2) {
+                $.each(style[styleId], function (index, item) {
+                    if (item[index].IconStyle) {
+                        if (index.toLowerCase().startsWith("normal")) {
+                            options.iconNormal = L.icon({
+                                iconUrl: item[index].IconStyle.Icon.href._text
+                            });
+
+                            options.icon = options.iconNormal;
+                        } else {
+                            options.iconHighlight = L.icon({
+                                iconUrl: item[index].IconStyle.Icon.href._text
+                            });
+                        }
+                    }
+                });
+            } else {
+                if (style[styleId].IconStyle) {
+                    options.iconNormal = L.icon({
+                        iconUrl: style[styleId].IconStyle.Icon.href._text
+                    });
+                    options.icon = options.iconNormal;
+                }
+            }
+        }
+
+        if (name) {
+            options.title = name;
+        }
+
+        coords = kml2lfCoords(point.coordinates._text);
+
+        //marker = L.marker([coords[1], coords[0]], options);
+        result = new marker2(coords, options);
+        result.on("mouseover", function (e) {
+            if (e.target.options.iconHighlight.options.iconUrl != "") {
+                e.target.setIcon(e.target.options.iconHighlight);
+            }
+        });
+        result.on("mouseout", function (e) {
+            if (e.target.options.iconHighlight.options.iconUrl != "") {
+                e.target.setIcon(e.target.options.iconNormal);
+            }
+        });
+
+        return result;
+    }
+
+    KMLLayer.prototype._getLineString = function(lineString, name, styleId, style) {
+        var self = this;
+        var result, options = {}, coordsArray;
+        
+        // create lineString and return it
+        options = self.getProperty("DefaultLineStyle");
+        if (style) {
+            if (style[styleId].LineStyle) {
+                if (style[styleId].LineStyle.color) {
+                    options.color = kml2lfColor(style[styleId].LineStyle.color._text);
+                }
+                if (style[styleId].LineStyle.width) {
+                    options.weight = style[styleId].LineStyle.width._text;
+                }
+            }
+        }
+
+        if (name) {
+            options.title = name;
+        }
+
+        coordsArray = kml2lfLineCoords(lineString.coordinates._text);
+        result = L.polyline(coordsArray, options);
+
+        return result;
+    }
+
+    KMLLayer.prototype._getLinearRing = function(linearString, name, styleId, style) {
+        var self = this;
+        var result, options = {}, coordsArray = [];
+        
+        // create polygon and return it
+        var options = self.getProperty("DefaultPolygonStyle");
+        if (style) {
+            if (style[styleId].PolyStyle) {
+                if (style[styleId].PolyStyle.color) {
+                    options.color = kml2lfColor(style[styleId].PolyStyle.color._text);
+                }
+                if (style[styleId].PolyStyle.width) {
+                    options.weight = style[styleId].PolyStyle.width._text;
+                }
+                if (style[styleId].PolyStyle.fill) {
+                    options.weight = style[styleId].PolyStyle.fill._text;
+                }
+            }
+        }
+
+        if (name) {
+            options.title = name;
+        }
+
+        coordsArray.push(kml2lfLineCoords(linearString.coordinates._text));
+
+        result = L.polygon(coordsArray, options);
+        return result;
+    }
+
+    KMLLayer.prototype._getPolygon = function(polygon, name, styleId, style) {
+        var self = this;
+        var result, options = {}, coordsArray = [];
+        
+        // create polygon and return it
+        // always outerBoundaryIs
+        var options = self.getProperty("DefaultPolygonStyle");
+        if (style) {
+            if (style[styleId].PolyStyle) {
+                if (style[styleId].PolyStyle.color) {
+                    options.color = kml2lfColor(style[styleId].PolyStyle.color._text);
+                }
+                if (style[styleId].PolyStyle.width) {
+                    options.weight = style[styleId].PolyStyle.width._text;
+                }
+                if (style[styleId].PolyStyle.fill) {
+                    options.weight = style[styleId].PolyStyle.fill._text;
+                }
+            }
+        }
+
+        if (name) {
+            options.title = name;
+        }
+
+        coordsArray.push(kml2lfLineCoords(polygon.outerBoundaryIs.LinearRing.coordinates._text));
+
+        // 0..n innerBoundaryIs
+        if (polygon.innerBoundaryIs) {
+            $.each(polygon.innerBoundaryIs, function(index, item) {
+                if (index === "LinearRing") {
+                    coordsArray.push(kml2lfLineCoords(item.coordinates._text));
+                }
+            });
+        }
+
+        result = L.polygon(coordsArray, options);
+        return result;
+    }
+
+    KMLLayer.prototype._getMultiGeometry = function(multiGeometry, name, styleId, style) {
+        var self = this;
+        var result = [];
+
+        // multiGeometry can be collections of collections.
+        $.each(multiGeometry, function(index, item) {
+            if (index === "Point") {
+                if (Array.isArray(item)) {
+                    $.each(item, function(subItemIndex, subItem) {
+                        result.push(self._getPoint(subItem, name, styleId, style));
+                    });
+                } else {
+                    result.push(self._getPoint(item, name, styleId, style));
+                }
+            } else
+            if (index === "LineStyle") {
+                if (Array.isArray(item)) {
+                    $.each(item, function(subItemIndex, subItem) {
+                        result.push(self._getLineStyle(subItem, name, styleId, style));
+                    });
+                } else {
+                    result.push(self._getLineStyle(item, name, styleId, style));
+                }
+            } else
+            if (index === "LinearRing") {
+                if (Array.isArray(item)) {
+                    $.each(item, function(subItemIndex, subItem) {
+                        result.push(self._getLinearRing(subItem, name, styleId, style));
+                    });
+                } else {
+                    result.push(self._getLinearRing(item, name, styleId, style));
+                }
+            } else
+            if (index === "Polygon") {
+                if (Array.isArray(item)) {
+                    $.each(item, function(subItemIndex, subItem) {
+                        result.push(self._getPolygon(subItem, name, styleId, style));
+                    });
+                } else {
+                    result.push(self._getPolygon(item, name, styleId, style));
+                }
+            } else
+            if (index === "MultiGeometry") {
+                if (Array.isArray(item)) {
+                    $.each(item, function(subItemIndex, subItem) {
+                        result.push(self._getMultiGeometry(subItem, name, styleId, style));
+                    });
+                } else {
+                    result.push(self._getMultiGeometry(item, name, styleId, style));
+                }
+            }
+        });
+
+        return result;
+    }
+    
     KMLLayer.prototype._processPlacemark = function (placemark) {
         var self = this;
 
         // different geometry types
         // Point, LineString, LinearRing, Polygon, MultiGeometry, <gx:MultiTrack>, <Model>, <gx:Track>
 
-        // Point
-        var styleId, style, marker, options = {},
-            coords, coordsArray;
+        var name, styleId, style, result;
         if (placemark instanceof Array) {
             $.each(placemark, function (index, item) {
                 if ((index === "container") || (index === "parentContainer")) {
@@ -103,83 +338,33 @@ var KMLLayerObject = (function () {
                 }
             });
         } else {
+            // get style for placemark
+            if (placemark.styleUrl) {
+                styleId = placemark.styleUrl._text.replace("#", "");
+
+                style = self._getStyle(placemark.container, styleId);
+            }
+
+            if (placemark.name) {
+                name = placemark.name._text;
+            }
+
             if (placemark.Point) {
-                if (placemark.styleUrl) {
-                    styleId = placemark.styleUrl._text.replace("#", "");
-
-                    style = self._getStyle(placemark.container, styleId);
-                }
-
-                // create marker and store it
-                if (style) {
-                    if (Object.keys(style[styleId]).length === 2) {
-                        $.each(style[styleId], function (index, item) {
-                            if (item[index].IconStyle) {
-                                if (index.toLowerCase().startsWith("normal")) {
-                                    options.iconNormal = L.icon({
-                                        iconUrl: item[index].IconStyle.Icon.href._text
-                                    });
-
-                                    options.icon = options.iconNormal;
-                                } else {
-                                    options.iconHighlight = L.icon({
-                                        iconUrl: item[index].IconStyle.Icon.href._text
-                                    });
-                                }
-                            }
-                        });
-                    } else {
-                        if (style[styleId].IconStyle) {
-                            options.iconNormal = L.icon({
-                                iconUrl: style[styleId].IconStyle.Icon.href._text
-                            });
-                            options.icon = options.iconNormal;
-                        }
-                    }
-                } else {
-                    options.icon = self.getProperty("DefaultIcon");
-                }
-                coords = placemark.Point.coordinates._text.split(",");
-                if (placemark.name) {
-                    options.title = placemark.name._text;
-                }
-                //marker = L.marker([coords[1], coords[0]], options);
-                marker = new marker2([coords[1], coords[0]], options);
-                marker.on("mouseover", function (e) {
-                    if (e.target.options.iconHighlight.options.iconUrl != "") {
-                        e.target.setIcon(e.target.options.iconHighlight);
-                    }
-                });
-                marker.on("mouseout", function (e) {
-                    if (e.target.options.iconHighlight.options.iconUrl != "") {
-                        e.target.setIcon(e.target.options.iconNormal);
-                    }
-                });
-                self._config.Placemarks.push(marker);
+                result = self._getPoint(placemark.Point, name, styleId, style);
+                self._config.Placemarks.push(result);
             } else if (placemark.LineString) {
-                if (placemark.styleUrl) {
-                    var id = placemark.styleUrl._text.replace("#", "");
-
-                    style = self._getStyle(placemark.container, id);
-                }
+                result = self._getLineString(placemark.LineString, name, styleId, style);
+                self._config.Placemarks.push(result);
             } else if (placemark.LinearRing) {
-                if (placemark.styleUrl) {
-                    var id = placemark.styleUrl._text.replace("#", "");
-
-                    style = self._getStyle(placemark.container, id);
-                }
+                result = self._getLinearRing(placemark.LinearRing, name, styleId, style);
             } else if (placemark.Polygon) {
-                if (placemark.styleUrl) {
-                    var id = placemark.styleUrl._text.replace("#", "");
-
-                    style = self._getStyle(placemark.container, id);
-                }
+                result = self._getPolygon(placemark.Polygon, name, styleId, style);
+                self._config.Placemarks.push(result);
             } else if (placemark.MultiGeometry) {
-                if (placemark.styleUrl) {
-                    var id = placemark.styleUrl._text.replace("#", "");
-
-                    style = self._getStyle(placemark.container, id);
-                }
+                result = self._getMultiGeometry(placemark.MultiGeometry, name, styleId, style);
+                $.each(result, function(index, item) {
+                    self._config.Placemarks.push(item);
+                });
             }
         }
     }
@@ -206,7 +391,6 @@ var KMLLayerObject = (function () {
                 } else {
                     if (index === "Placemark") {
                         self._processPlacemark(item);
-                        console.log("------------------------------------------------------------");
                     }
 
                     if ((item instanceof Object) || (item instanceof Array)) {
