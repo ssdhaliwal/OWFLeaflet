@@ -12,35 +12,53 @@ var KMLLayerObject = (function () {
     KMLLayer.prototype._initialize = function (conent, options) {
         var self = this;
 
-        // part the options and update config
-        $.each(options, function (index, item) {
-            self._config[index] = item;
-        });
-
-        // store the content
+        // store options and content
+        self.setProperty("options", options);
         self.setProperty("content", content);
 
         // create default styles for icon, lines, etc.
-        self._config.DefaultIconStyle = L.icon({
-            iconUrl: "https://localhost:7443/OWFLeaflet/vendor/images/marker-icon.png"
-        });
+        self._config.DefaultIconStyle = {
+            iconUrl: "https://localhost:7443/OWFLeaflet/vendor/images/marker-icon.png",
+            iconSize: [24, 24],
+            iconAnchor: [24, 24],
+            popupAnchor: [-3, -3]
+        }
         self._config.DefaultLineStyle = {
             smoothFactory: 1.0,
             stroke: true,
-            color: "#3388ff",
+            color: "#d35400",
             weight: 1,
             opacity: 1.0
         }
         self._config.DefaultPolygonStyle = {
             smoothFactory: 1.0,
             stroke: true,
-            color: "#3388ff",
+            color: "#2980b9",
             weight: 1,
             opacity: 1.0,
             fill: true,
-            fillColor: "#3388ff",
+            fillColor: "#3498db",
             fillOpacity: 0.2,
             fillRule: "evenodd"
+        }
+
+        // adjust the default styles from options
+        if (self._config.options) {
+            if (self._config.options.IconStyle) {
+                $.each(self._config.options.IconStyle, function(index, item) {
+                    self._config.DefaultIconStyle[index] = item;
+                });
+            }
+            if (self._config.options.LineStyle) {
+                $.each(self._config.options.LineStyle, function(index, item) {
+                    self._config.DefaultLineStyle[index] = item;
+                });
+            }
+            if (self._config.options.PolygonStyle) {
+                $.each(self._config.options.PolygonStyle, function(index, item) {
+                    self._config.DefaultPolygonStyle[index] = item;
+                });
+            }
         }
 
         // create storage for placemarks
@@ -119,7 +137,6 @@ var KMLLayerObject = (function () {
         var result, options = {}, coords;
         
         // create marker and return it
-        options.icon = self.getProperty("DefaultIconStyle");
         if (style) {
             if (Object.keys(style[styleId]).length === 2) {
                 $.each(style[styleId], function (index, item) {
@@ -145,6 +162,8 @@ var KMLLayerObject = (function () {
                     options.icon = options.iconNormal;
                 }
             }
+        } else {
+            options.icon = L.icon(self.getProperty("DefaultIconStyle"));
         }
 
         if (name) {

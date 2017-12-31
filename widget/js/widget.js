@@ -910,20 +910,28 @@ var WidgetObject = (function () {
 
         var xml = self.getState("XMLObject");
         var xmlObject = new xml(payload.feature, {
-                valueNode: "_value",
-                textNode: "_text",
-                attributeNode: "_attr",
-                addNodeInfo: "true",
-                addKMLContainer: "true"
-            });
+            valueNode: "_value",
+            textNode: "_text",
+            attributeNode: "_attr",
+            addNodeInfo: "true",
+            addKMLContainer: "true"
+        });
 
         var level = 0;
         var result = xmlObject.toJSON(null, level, "", null);
 
         var kml = self.getState("KMLLayerObject");
         var kmlLayer = new kml(result, {
-            opt1: "test",
-            opt2: "test2"
+            IconStyle: {
+
+            },
+            LineStyle: {
+                color: "#2c3e50"
+            },
+            PolygonStyle: {
+                color: "#c0392b",
+                fillColor: "#e74c3c",
+            }
         });
         kmlLayer.getPlacemarks(result);
         var featureLayer = L.featureGroup(kmlLayer.getProperty("Placemarks"))
