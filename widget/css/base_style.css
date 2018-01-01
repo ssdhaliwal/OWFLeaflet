@@ -18,7 +18,7 @@ body {
     margin-bottom: 0px !important;
     border-radius: 0;
     font-size: 12px;
-    min-height:32px !important;
+    min-height: 28px !important;
 }
 
 .navbar-form {
@@ -40,6 +40,10 @@ body {
     margin-top: 7px;
 }
 
+.dropdown-submenu {
+    position: relative;
+}
+
 a.disabled {
     color: gray !important;
     pointer-events: none;
@@ -48,4 +52,5 @@ a.disabled {
 
 .no-wrap {
     white-space: nowrap;
+    display: flex;
 }

@@ -32,7 +32,7 @@
             // loop throught the data array and update the script tag
             // cannot update the object directly; have to use setAttribute
             if (data) {
-                data.forEach(function(item) {
+                data.forEach(function (item) {
                     for (var prop in item) {
                         eJS.setAttribute(prop, item[prop]);
                     };
@@ -54,6 +54,7 @@
         loadCSS("vendor/css/bootstrap-treeview.min.css?" + ver);
         loadCSS("vendor/css/leaflet.css?" + ver);
         loadCSS("vendor/css/dragAndDrop.css?" + ver);
+        loadCSS("vendor/css/jquery.smartmenus.bootstrap.css?" + ver);
 
         // add css for widget specific
         loadCSS("widget/css/base_style.css?" + ver);
@@ -67,85 +68,97 @@
         //loadJS("vendor/js/date.format-1.2.3.js?" + ver);
         //loadJS("vendor/js/leaflet-1.2.0.min.js?" + ver);
         loadJS("vendor/js/owf-widget.min.js?" + ver);
-        loadJS("vendor/js/require-2.3.5.min.js?" + ver, [{"data-main": "./app"}]);
+        loadJS("vendor/js/require-2.3.5.min.js?" + ver, [{
+            "data-main": "./app"
+        }]);
 
         // add core support/utilities and config scripts
         //loadJS("widget/js/config.js?" + ver);
         //loadJS("widget/js/widget.js?" + ver);
     </script>
-    <nav class="navbar navbar-default">
-        <div class="container-fluid">
-            <!-- Brand and toggle get grouped for better mobile display -->
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1"
-                    aria-expanded="false">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#">Brand</a>
-            </div>
 
-            <!-- Collect the nav links, forms, and other content for toggling -->
-            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                <ul class="nav navbar-nav">
-                    <li class="dropdown keepopen">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">MAPS
-                            <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu" id="mapMenuItems">
-                            <div id="treeViewMap"></div>
-                        </ul>
-                    </li>
-                </ul>
-                <ul class="nav navbar-nav">
-                    <li class="dropdown keepopen">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">LAYERS
-                            <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu" id="layerMenuItems">
-                            <div id="treeViewLayer"></div>
-                        </ul>
-                    </li>
-                </ul>
-                <form class="navbar-form navbar-left">
-                    <div class="form-group">
-                        <input type="text" class="form-control input-sm2" placeholder="Search">
-                    </div>
-                    <button type="submit" class="btn btn-xs btn-default">Submit</button>
-                </form>
-                <ul class="nav navbar-nav navbar-right">
-                    <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">DRAW
-                            <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a href="#">Placemarks</a>
-                            </li>
-                            <li role="separator" class="divider"></li>
-                            <li>
-                                <a href="#">Lines/Polygons</a>
-                            </li>
-                            <li>
-                                <a href="#">Eclipse</a>
-                            </li>
-                            <li role="separator" class="divider"></li>
-                            <li>
-                                <a href="#">EDIT</a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="#" id="btnReset">RESET</a>
-                    </li>
-                </ul>
-            </div>
-            <!-- /.navbar-collapse -->
+    <!-- Navbar -->
+    <div class="navbar navbar-default" role="navigation">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">OWFLeaflet</a>
         </div>
-        <!-- /.container-fluid -->
-    </nav>
+        <div class="navbar-collapse collapse">
+
+            <!-- Left nav -->
+            <ul class="nav navbar-nav">
+                <li>
+                    <a href="#">MAPS
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <div id="treeViewMap"></div>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#">LAYERS
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <div id="treeViewLayer"></div>
+                    </ul>
+                </li>
+                <li>
+                    <div class="form-group no-wrap">
+                        <input type="text" class="form-control input-sm2" placeholder="Search">
+                        <button type="submit" class="btn btn-xs btn-default">Submit</button>
+                    </div>
+                </li>
+            </ul>
+
+            <!-- Right nav -->
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <a href="#">DRAW
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a href="#">Placemarks</a>
+                        </li>
+                        <li>
+                            <a href="#">Lines/Polygons</a>
+                        </li>
+                        <li>
+                            <a href="#">Eclipse(s)</a>
+                        </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a href="#">EDIT</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="active">
+                    <a href="#" id="btnReset">RESET</a>
+                </li>
+                <li>
+                    <a href="#">HELP
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a href="#">Version</a>
+                        </li>
+                        <li>
+                            <a href="#">About</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+        </div>
+        <!--/.nav-collapse -->
+    </div>
 
     <container>
         <div class="container-fluid text-center map-container">
@@ -154,5 +167,6 @@
         </div>
     </container>
 </body>
+
 
 </html>

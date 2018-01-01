@@ -7,6 +7,8 @@ requirejs.config({
         lodash: "../vendor/js/lodash-4.17.4.min",
         handlebars: "../vendor/js/handlebars-4.0.11.min",
         bootstrap: "../vendor/js/bootstrap-3.3.7.min",
+        smartmenus: "../vendor/js/jquery.smartmenus",
+        smartmenus2: "../vendor/js/jquery.smartmenus.bootstrap",
         //underscore: "../vendor/js/underscore-1.8.3.min",
         //backbone: "../vendor/js/backbone.min",
         leaflet: "../vendor/js/leaflet-1.2.0.min"
@@ -19,6 +21,12 @@ requirejs.config({
         //    deps: ['jquery', 'underscore'],
         //    exports: 'Backbone'
         //},
+        "smartmenus2": {
+            "deps": ['smartmenus']
+        },
+        "smartmenus": {
+            "deps": ['jquery']
+        },
         "bootstrap": {
             "deps": ["jquery"]
         },
@@ -29,7 +37,7 @@ requirejs.config({
 });
 
 requirejs(['jquery', 'lodash', 'handlebars', 'leaflet', 'main',
-        'bootstrap'
+        'bootstrap', 'smartmenus', 'smartmenus2'
     ],
     function ($, lo, handlebars, L, main) {
         owfdojo.addOnLoad(function () {
