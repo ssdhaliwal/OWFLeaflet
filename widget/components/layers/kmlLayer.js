@@ -9,7 +9,7 @@ var KMLLayerObject = (function () {
         this._initialize(content, options);
     }
 
-    KMLLayer.prototype._initialize = function (conent, options) {
+    KMLLayer.prototype._initialize = function (content, options) {
         var self = this;
 
         // store options and content
