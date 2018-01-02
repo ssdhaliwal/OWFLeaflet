@@ -901,7 +901,47 @@ var WidgetObject = (function () {
     /* pending */
     Widget.prototype.onRecvMapOverlayUpdate = function (sender, message) {}
 
-    /* pending */
+    /* in-work */
+    Widget.prototype.findFeatureNode = function(overlayId, feature) {
+        var self = this;
+
+        // if node exists, return node; else create it
+        // local vars
+        var nodes, nodeFound;
+
+        // search for name in list
+        nodes = $('#treeViewLayer').treeview('findNodes', ['^' + overlayId + '$', 'overlayId']);
+        $.each(nodes, function (index, item) {
+            if ((item.overlayId === overlayId) &&
+                (item.feature === feature)) {
+                nodeFound = item;
+                return;
+            }
+        });
+
+        // name found, check
+        if (nodeFound) {
+            //$('#treeViewLayer').treeview('checkNode', [nodeFound]);
+        }
+
+        // return the node
+    }
+    Widget.prototype.removeFeatureNode = function(overlayId, feature) {
+        var self = this;
+   
+        // get the feature node; if exists - remove it from map and treeview
+    }
+    Widget.prototype.showFeatureNode = function(overlayId, feature) {
+        var self = this;
+        
+        // get the feature node; if not checked then check it and connect to map
+    }
+    Widget.prototype.hideFeatureNode = function(overlayId, feature) {
+        var self = this;
+        
+        // get the feature node; if checked then uncheck it and remove from map
+    }
+
     Widget.prototype.onRecvMapFeaturePlot = function (sender, message) {
         var self = this;
 
@@ -933,7 +973,12 @@ var WidgetObject = (function () {
                 fillColor: "#e74c3c",
             }
         });
-        kmlLayer.getPlacemarks(result);
+        kmlLayer.getPlacemarks();
+
+        // no errors; then we need to check the overlay/feature in treeview
+        self.onRecvMapOverlayCreate(sender, message);
+
+        // render the feature
         var featureLayer = L.featureGroup(kmlLayer.getProperty("Placemarks"))
             .addTo(self._map);
 

@@ -391,11 +391,10 @@ var KMLLayerObject = (function () {
     KMLLayer.prototype.getPlacemarks = function (node, adjLevel) {
         var self = this;
 
-        // make sure node is instance of object or array
-        //if ((!node) || (node instanceof String) || (node instanceof Number) ||
-        //    (node instanceof Boolean)) {
-        //    return;
-        //}
+        // if node is empty; then use the content if available
+        if (!node) {
+            node = self.getProperty("content");
+        }
 
         // collect all placemarks
         // - collect styleurl info
